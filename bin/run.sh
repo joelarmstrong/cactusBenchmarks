@@ -41,7 +41,8 @@ else
 fi
 status=$(docker wait "$NAME")
 if [[ $status == 0 ]]; then
-    docker cp "$NAME":/output output-"$NAME"
+    mkdir output-"$NAME"
+    docker cp "$NAME":/output/* output-"$NAME"/
     docker rm "$NAME"
 else
     echo "Run with container name $NAME has failed. Last 10 lines of the log:"

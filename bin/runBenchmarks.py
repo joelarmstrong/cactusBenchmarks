@@ -93,5 +93,20 @@ def main(args):
     for test in tests:
         test.run(opts)
 
+    # Put git commit in the output dir
+    os.chdir(opts.progressiveCactusDir)
+    system("git rev-parse HEAD > %s/progressiveCactus_version" % opts.outputDir)
+    os.chdir(os.path.join(opts.progressiveCactusDir, "submodules/cactus"))
+    system("git rev-parse HEAD > %s/cactus_version" % opts.outputDir)
+
+    # Put config in the output dir
+    if opts.cactusConfigFile is not None:
+        system("cp %s %s/config.xml" % (opts.cactusConfigFile, opts.outputDir))
+    else:
+        # we used the default config
+        system("cp %s %s/config.xml" % (os.path.join(opts.progressiveCactusDir,
+                                                     "submodules/cactus/cactus_progressive_config.xml"),
+                                        opts.outputDir))
+
 if __name__ == '__main__':
     main(sys.argv)
