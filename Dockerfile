@@ -9,7 +9,9 @@ RUN cd progressiveCactus && make
 RUN git clone https://github.com/joelarmstrong/mafTools.git progressiveCactus/submodules/mafTools
 RUN . progressiveCactus/environment && cd progressiveCactus/submodules/mafTools && make lib.all mafComparator.all
 RUN git clone https://github.com/joelarmstrong/treeBuildingEvaluation progressiveCactus/submodules/treeBuildingEvaluation
-#RUN cd progressiveCactus/submodules/treeBuildingEvaluation && export PROGRESSIVE_CACTUS_DIR=/progressiveCactus && make -e
-COPY makeAndRunMammals.py /
+RUN . progressiveCactus/environment && cd progressiveCactus/submodules/treeBuildingEvaluation && export PROGRESSIVE_CACTUS_DIR=/progressiveCactus && make -e
+RUN . progressiveCactus/environment && pip install biopython
+ADD . /cactusBenchmarks
+ENV PYTHONPATH /cactusBenchmarks/src
 CMD ["--help"]
-ENTRYPOINT ["python", "makeAndRunMammals.py", "progressiveCactus"]
+ENTRYPOINT ["cactusBenchmarks/bin/runBenchmarks", "progressiveCactus", "cactusBenchmarks/testRegions"]

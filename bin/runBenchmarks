@@ -1,0 +1,5 @@
+#!/bin/sh
+. progressiveCactus/environment
+PATH=$PATH:/progressiveCactus/submodules/treeBuildingEvaluation/bin
+PATH=$PATH:/progressiveCactus/submodules/mafTools/bin
+python cactusBenchmarks/bin/runBenchmarks.py $@

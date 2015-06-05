@@ -1,0 +1,6 @@
+(((simHuman_chr6:0.0067,simChimp_chr6:0.006667):0.00225,simGorilla_chr6:0.008825):0.00968,simOrang_chr6:0.018318);
+
+simChimp_chr6 simChimp.chr6
+simGorilla_chr6 simGorilla.chr6
+simHuman_chr6 simHuman.chr6
+simOrang_chr6 simOrang.chr6
