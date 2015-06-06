@@ -42,7 +42,14 @@ fi
 status=$(docker wait "$NAME")
 if [[ $status == 0 ]]; then
     mkdir output-"$NAME"
-    docker cp "$NAME":/output/* output-"$NAME"/
+    docker cp "$NAME":/output output-"$NAME"/
+    # For some reason, docker will insist on making the "output"
+    # directory a subdirectory of the destination path it's
+    # given. This is a roundabout way of getting it to do what we
+    # actually want
+    mv output-"$NAME"/output/* output-"$NAME"
+    rmdir output-"$NAME"/output
+    # Delete the container
     docker rm "$NAME"
 else
     echo "Run with container name $NAME has failed. Last 10 lines of the log:"

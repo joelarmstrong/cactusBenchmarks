@@ -1,4 +1,0 @@
-[Alignment]
-seqFile=seqFile.txt
-[Evaluation]
-truth=truth.maf
