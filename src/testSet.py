@@ -40,6 +40,10 @@ class TestSet:
             progressiveCactusDir, configFile, self.seqFile, self.workDir,
             self.hal))
 
+        # Copy the alignment log to the output directory
+        system("cp %s %s" % (os.path.join(self.workDir, "cactus.log"),
+                             self.outputDir))
+
     def makeHub(self):
         system("hal2assemblyHub.py --hub %s --longLabel %s --shortLabel %s %s --jobTree %s/jobTree %s" % (self.label, self.label, self.label, self.hal, getTempDirectory(), os.path.join(self.outputDir, "hub")))
 
