@@ -29,10 +29,20 @@ CACTUS_BENCHMARKS_DIR=$(readlink -f $(dirname $0)/..)
 
 docker build -t "$IMAGE_NAME" "$CACTUS_BENCHMARKS_DIR"
 if [ -z $CONFIG ]; then
+    # Use default cactus config file (included in cactus repository)
     docker run -d --name "$NAME" "$IMAGE_NAME" --outputDir /output \
            "$NAME" \
            $ARGS_TO_PASS
 else
+    # Use custom cactus config file.
+    # First, copy the config file to a temporary file, to ensure that
+    # any changes to it while the container's running doesn't screw
+    # with the output
+    NEW_CONFIG=$(mktemp)
+    cp "$CONFIG" "$NEW_CONFIG"
+    CONFIG=$NEW_CONFIG
+    # Now run the container, mounting the config file to a custom
+    # location
     docker run --name "$NAME" -d -v "$CONFIG":/"$CONFIG" "$IMAGE_NAME" \
         --cactusConfigFile /"$CONFIG" \
         --outputDir /output \
@@ -51,6 +61,11 @@ if [[ $status == 0 ]]; then
     rmdir output-"$NAME"/output
     # Delete the container
     docker rm "$NAME"
+    if [ -f "$CONFIG" ]; then
+        # We created a temporary copy of the config file. Delete it
+        # now.
+        rm "$CONFIG"
+    fi
 else
     echo "Run with container name $NAME has failed. Last 10 lines of the log:"
     docker logs --tail 10 "$NAME"
