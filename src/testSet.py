@@ -1,4 +1,4 @@
-from ConfigParser import ConfigParser
+import ConfigParser
 from bioio import getTempDirectory
 from bioio import system
 from bioio import nameValue
@@ -19,25 +19,38 @@ class TestSet:
         self.workDir = getTempDirectory()
         self.outputDir = outputDir
         if not os.path.exists(self.outputDir):
-            os.mkdir(self.outputDir)
+            os.makedirs(self.outputDir)
         self.hal = os.path.join(outputDir, "out.hal")
 
     def parseConfig(self, configPath):
         """Parses the configuration file."""
-        self.config = ConfigParser()
+        self.config = ConfigParser.ConfigParser()
         self.config.read(configPath)
-        if not self.config.has_option("Alignment", "seqFile"):
-            raise RuntimeError("Test set config at %s does not point to an "
-                               "input seqFile." % configPath)
-        self.seqFile = self.config.get("Alignment", "seqFile")
+        self.seqFile = self.getOption("Alignment", "seqFile", required=True)
+
+    def getOption(self, section, option, default=None, required=False):
+        """Gets an option from the test config, with an optional default.
+
+        Throws an exception if required is True and the option or
+        section aren't present, and returns None if no option is found
+        and no default is provided."""
+        try:
+            return self.config.get(section, option)
+        except ConfigParser.Error:
+            if required:
+                raise RuntimeError("Could not find required option %s in"
+                                   " section %s of the config file for region "
+                                   "%s" % (option, section, self.label))
+            return default
 
     def align(self, progressiveCactusDir, configFile):
         """Run the actual alignment."""
         os.chdir(self.path)
 
         configFile = nameValue("config", configFile)
-        system("%s/bin/runProgressiveCactus.sh --stats %s %s %s %s" % (
-            progressiveCactusDir, configFile, self.seqFile, self.workDir,
+        root = nameValue("root", self.getOption("Alignment", "root"))
+        system("%s/bin/runProgressiveCactus.sh --stats %s %s %s %s %s" % (
+            progressiveCactusDir, configFile, root, self.seqFile, self.workDir,
             self.hal))
 
         # Copy the alignment log to the output directory
@@ -57,7 +70,7 @@ class TestSet:
         containing only sequence names (not UCSC-styled "genome.chr"
         names).
         """
-        truth = self.config.get('Evaluation', 'truth')
+        truth = self.getOption('Evaluation', 'truth')
 
         # Extract the maf for our alignment
         test = os.path.join(getTempDirectory(), 'test.maf')
@@ -70,7 +83,7 @@ class TestSet:
             self.align(opts.progressiveCactusDir, opts.cactusConfigFile)
             self.makeHub()
             self.getCoverage()
-            if self.config.has_option("Evaluation", "truth"):
+            if self.getOption("Evaluation", "truth") is not None:
                 self.getPrecisionRecall()
         except Exception, e:
             sys.stderr.write("Could not complete test on region %s. "

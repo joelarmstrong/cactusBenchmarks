@@ -78,17 +78,17 @@ def parseArgs(args):
 def main(args):
     opts = parseArgs(args)
 
-    # ensure our output dir exists, and redirect our stderr there for
-    # logging purposes.
-    if not os.path.isdir(opts.outputDir):
-        os.mkdir(opts.outputDir)
-    sys.stderr = open(os.path.join(opts.outputDir, "log"), 'w')
-
     # setup progressiveCactus to point to the right commit, and run
     # make
     initializeProgressiveCactus(opts)
 
     tests = setupTestSets(opts.testRegionsDir, opts.outputDir, opts.tests)
+
+    # ensure our output dir exists, and redirect our stderr there for
+    # logging purposes.
+    if not os.path.isdir(opts.outputDir):
+        os.mkdir(opts.outputDir)
+    sys.stderr = open(os.path.join(opts.outputDir, "log"), 'w')
 
     for test in tests:
         test.run(opts)
