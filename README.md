@@ -45,7 +45,9 @@ branch of progressiveCactus to switch to
 ### --cactusBranch CACTUSBRANCH
 branch of cactus to switch to
 ### --cactusConfigFile CACTUSCONFIGFILE
-config xml to use instead of default
+config xml to use instead of default. When using Docker, this is
+copied into the container, so it may be safely modified after the
+container starts running.
 ### --outputDir OUTPUTDIR
 dir to place test results in
 ### --stats
