@@ -2,4 +2,5 @@
 . progressiveCactus/environment
 PATH=$PATH:/progressiveCactus/submodules/treeBuildingEvaluation/bin
 PATH=$PATH:/progressiveCactus/submodules/mafTools/bin
+PATH=$PATH:/progressiveCactus/submodules/hal/extra/dotplot
 python cactusBenchmarks/bin/runBenchmarks.py $@

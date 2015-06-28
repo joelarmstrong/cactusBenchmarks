@@ -4,6 +4,7 @@ from bioio import system
 from bioio import nameValue
 import os
 import sys
+import re
 
 class TestSet:
     """Represents a single test region.
@@ -78,6 +79,23 @@ class TestSet:
                (self.hal, test))
         system("mafComparator --maf1 %s --maf2 %s --out %s" % (truth, test, os.path.join(self.outputDir, "mafComparator.xml")))
 
+    def makeDotplot(self):
+        """Puts a dotplot in dotplot.pdf, given the dotplot option
+
+        The dotplot option has the format:
+        "genomeX.seqX:startX-endX,genomeY.seqY:startY-endY"
+        """
+        dotplotString = self.getOption("Evaluation", "dotplot")
+        match = re.match(
+            r'(.*?)\.([^:,]*),(.*?)\.([^:]*)',
+            # r'(.*?)\.([^:,]*):?([0-9]*)?-?([0-9]*)?,(.*?)\.([^:]*):?([0-9]*)?-?([0-9]*)?',
+            dotplotString)
+        genomeX, seqX, genomeY, seqY = match.groups()
+        system("runDotplot.py %s %s %s %s %s"
+               "| plotDotplot.R /dev/stdin %s" % \
+               (self.hal, genomeX, seqX, genomeY, seqY,
+                os.path.join(self.outputDir, "dotplot.pdf")))
+
     def run(self, opts):
         try:
             self.align(opts.progressiveCactusDir, opts.cactusConfigFile)
@@ -85,6 +103,8 @@ class TestSet:
             self.getCoverage()
             if self.getOption("Evaluation", "truth") is not None:
                 self.getPrecisionRecall()
+            if self.getOption("Evaluation", "dotplot") is not None:
+                self.makeDotplot()
         except Exception, e:
             sys.stderr.write("Could not complete test on region %s. "
                              "Error: %s\n" % (self.path, repr(e)))
