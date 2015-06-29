@@ -91,11 +91,11 @@ class TestSet:
             # r'(.*?)\.([^:,]*):?([0-9]*)?-?([0-9]*)?,(.*?)\.([^:]*):?([0-9]*)?-?([0-9]*)?',
             dotplotString)
         genomeX, seqX, genomeY, seqY = match.groups()
-        system("runDotplot.py %s %s %s %s %s"
-               "| plotDotplot.R /dev/stdin %s" % \
-               (self.hal, genomeX, seqX, genomeY, seqY,
-                os.path.join(self.outputDir, "dotplot.pdf")))
-
+        tempFile = os.path.join(self.workDir, "tmp.dotplot")
+        system("runDotplot.py %s %s %s %s %s > %s" % \
+               (self.hal, genomeX, seqX, genomeY, seqY, tempFile))
+        system("plotDotplot.R %s %s" % (tempFile, os.path.join(self.outputDir,
+                                                               "dotplot.pdf")))
     def run(self, opts):
         try:
             self.align(opts.progressiveCactusDir, opts.cactusConfigFile)
