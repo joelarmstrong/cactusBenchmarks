@@ -27,7 +27,7 @@ another.
 
 ## Running without Docker
 
-Use `bin/runBenchmarks.py`:
+Ensure you're in the progressiveCactus environment, and that mafComparator and the dotplot scripts are in your PATH. Use `bin/runBenchmarks.py`:
 
 ```
 ./bin/runBenchmarks.py [OPTIONS] progressiveCactusDir testRegionsDir testLabel
