@@ -96,6 +96,18 @@ class TestSet:
                (self.hal, genomeX, seqX, genomeY, seqY, tempFile))
         system("plotDotplot.R %s %s" % (tempFile, os.path.join(self.outputDir,
                                                                "dotplot.pdf")))
+
+    def getCoalescences(self):
+        """Runs the "correct-coalescences" evaluation on the test set.
+
+        The reference genome is given by the coalescenceRefGenome
+        option in the config file.
+        """
+        refGenome = self.getOption("Evaluation", "coalescenceRefGenome")
+        system("scoreHalPhylogenies.py --jobTree %s/jobTree %s %s %s" % \
+               (getTempDirectory(), self.hal, refGenome,
+                os.path.join(self.outputDir, "coalescences.xml")))
+
     def run(self, opts):
         try:
             self.align(opts.progressiveCactusDir, opts.cactusConfigFile)
@@ -105,6 +117,8 @@ class TestSet:
                 self.getPrecisionRecall()
             if self.getOption("Evaluation", "dotplot") is not None:
                 self.makeDotplot()
+            if self.getOption("Evaluation", "coalescenceRefGenome") is not None:
+                self.getCoalescences()
         except Exception, e:
             sys.stderr.write("Could not complete test on region %s. "
                              "Error: %s\n" % (self.path, repr(e)))

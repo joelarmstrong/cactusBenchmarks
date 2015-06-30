@@ -1,6 +1,9 @@
 #!/bin/sh
+# Wrapper script to set up the environment properly inside the docker
+# container.
 . progressiveCactus/environment
-PATH=$PATH:/progressiveCactus/submodules/treeBuildingEvaluation/bin
+PATH=$PATH:/progressiveCactus/submodules/treeBuildingEvaluation/bin:/progressiveCactus/submodules/treeBuildingEvaluation/src
 PATH=$PATH:/progressiveCactus/submodules/mafTools/bin
 PATH=$PATH:/progressiveCactus/submodules/hal/extra/dotplot
+PYTHONPATH=$PYTHONPATH:/progressiveCactus/submodules/treeBuildingEvaluation/src
 python cactusBenchmarks/bin/runBenchmarks.py $@
