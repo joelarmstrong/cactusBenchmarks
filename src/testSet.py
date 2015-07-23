@@ -110,7 +110,8 @@ class TestSet:
 
     def run(self, opts):
         try:
-            self.align(opts.progressiveCactusDir, opts.cactusConfigFile)
+            progressiveCactusDir = opts.progressiveCactusPreBuilt if opts.progressiveCactusPreBuilt else opts.progressiveCactusDir
+            self.align(progressiveCactusDir, opts.cactusConfigFile)
             self.makeHub()
             self.getCoverage()
             if self.getOption("Evaluation", "truth") is not None:

@@ -48,8 +48,9 @@ def setupTestSets(dir, outputDir, tests=None):
 
 def parseArgs(args):
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument('progressiveCactusDir',
+    parser.add_argument('--progressiveCactusDir',
                         help="Location of progressiveCactus",
+                        default=None,
                         type=os.path.abspath)
     parser.add_argument('testRegionsDir',
                         help="directory containing test regions",
@@ -74,14 +75,21 @@ def parseArgs(args):
     parser.add_argument('--stats',
                         help="output stats file with jobTree stats",
                         default=False, action="store_true")
+    parser.add_argument('--progressiveCactusPreBuilt',
+                        help="location of progressiveCactus static build",
+                        default=None,
+                        type=os.path.abspath)
     return parser.parse_args(args[1:])
 
 def main(args):
     opts = parseArgs(args)
 
-    # setup progressiveCactus to point to the right commit, and run
-    # make
-    initializeProgressiveCactus(opts)
+    if opts.progressiveCactusPreBuilt:
+        os.chdir(opts.progressiveCactusPreBuilt)
+    else:
+        # setup progressiveCactus to point to the right commit, and run
+        # make
+        initializeProgressiveCactus(opts)
 
     tests = setupTestSets(opts.testRegionsDir, opts.outputDir, opts.tests)
 
@@ -94,19 +102,25 @@ def main(args):
     for test in tests:
         test.run(opts)
 
-    # Put git commit in the output dir
-    os.chdir(opts.progressiveCactusDir)
-    system("git rev-parse HEAD > %s/progressiveCactus_version" % opts.outputDir)
-    os.chdir(os.path.join(opts.progressiveCactusDir, "submodules/cactus"))
-    system("git rev-parse HEAD > %s/cactus_version" % opts.outputDir)
+    if opts.progressiveCactusDir:
+        # Put git commit in the output dir
+        os.chdir(opts.progressiveCactusDir)
+        system("git rev-parse HEAD > %s/progressiveCactus_version" % opts.outputDir)
+        os.chdir(os.path.join(opts.progressiveCactusDir, "submodules/cactus"))
+        system("git rev-parse HEAD > %s/cactus_version" % opts.outputDir)
 
     # Put config in the output dir
     if opts.cactusConfigFile is not None:
         system("cp %s %s/config.xml" % (opts.cactusConfigFile, opts.outputDir))
-    else:
+    elif opts.progressiveCactusDir:
         # we used the default config
         system("cp %s %s/config.xml" % (os.path.join(opts.progressiveCactusDir,
                                                      "submodules/cactus/cactus_progressive_config.xml"),
+                                        opts.outputDir))
+    else:
+        #copy config from pre-built cactus
+        system("cp %s %s/config.xml" % (os.path.join(opts.progressiveCactusPreBuilt,
+                                                    "lib/cactus/cactus_progressive_config.xml"),
                                         opts.outputDir))
 
 if __name__ == '__main__':
