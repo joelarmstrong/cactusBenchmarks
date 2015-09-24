@@ -14,6 +14,7 @@ def initializeProgressiveCactus(opts):
     system("git fetch")
     system("git checkout %s" % (opts.progressiveCactusBranch))
     system("git pull")
+    system("git submodule sync")
     system("git submodule update --init --recursive")
     if opts.cactusBranch is not None:
         os.chdir("submodules/cactus")
