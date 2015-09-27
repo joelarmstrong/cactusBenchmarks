@@ -2,7 +2,6 @@ FROM ubuntu:14.04
 RUN apt-get update && apt-get -y install build-essential git python2.7 python2.7-dev wget time bedtools r-base-core mafft fasttree
 # fix ubuntu's python package being totally broken
 RUN ln -s /usr/lib/python2.7/plat-*/_sysconfigdata_nd.py /usr/lib/python2.7/
-RUN git config --global url."https://".insteadOf git://
 RUN git clone --recursive https://github.com/bd2kgenomics/cactus.git
 RUN cd cactus && make
 RUN git clone https://github.com/joelarmstrong/mafTools.git cactus/submodules/mafTools
