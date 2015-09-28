@@ -16,7 +16,6 @@ def initializeProgressiveCactus(opts):
     system("git pull")
     system("git submodule sync")
     system("git submodule update --init --recursive")
-    system("make ucscClean")
     if opts.cactusBranch is not None:
         os.chdir("submodules/cactus")
         system("git fetch")
