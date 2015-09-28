@@ -69,8 +69,7 @@ if [[ $status == 0 ]]; then
 else
     echo "Run with container name $NAME has failed. Last 10 lines of the log:"
     docker logs --tail 10 "$NAME"
-    echo "The container was not automatically cleaned up. Run:"
-    echo "docker rm $NAME"
-    echo "to free the disk space it was using."
+    docker rm "$NAME"
+    
     exit 1
 fi
