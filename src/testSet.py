@@ -1,3 +1,4 @@
+from jobTree.scriptTree.target import Target
 import ConfigParser
 from bioio import getTempDirectory
 from bioio import system
@@ -6,14 +7,15 @@ import os
 import sys
 import re
 
-class TestSet:
+class TestSet(Target):
     """Represents a single test region.
 
     Using the run() method will compute the alignment for the test
     set, followed by several metrics (coverage, precision, recall,
     etc.) and (if desired) an assembly hub.
     """
-    def __init__(self, label, path, configPath, outputDir):
+    def __init__(self, label, path, configPath, outputDir, opts):
+        Target.__init__(self)
         self.label = label
         self.path = path
         self.parseConfig(configPath)
@@ -22,6 +24,7 @@ class TestSet:
         if not os.path.exists(self.outputDir):
             os.makedirs(self.outputDir)
         self.hal = os.path.join(outputDir, "out.hal")
+        self.opts = opts
 
     def parseConfig(self, configPath):
         """Parses the configuration file."""
@@ -108,17 +111,13 @@ class TestSet:
                (getTempDirectory(), self.hal, refGenome,
                 os.path.join(self.outputDir, "coalescences.xml")))
 
-    def run(self, opts):
-        try:
-            self.align(opts.progressiveCactusDir, opts.cactusConfigFile)
-            self.makeHub()
-            self.getCoverage()
-            if self.getOption("Evaluation", "truth") is not None:
-                self.getPrecisionRecall()
-            if self.getOption("Evaluation", "dotplot") is not None:
-                self.makeDotplot()
-            if self.getOption("Evaluation", "coalescenceRefGenome") is not None:
-                self.getCoalescences()
-        except Exception, e:
-            sys.stderr.write("Could not complete test on region %s. "
-                             "Error: %s\n" % (self.path, repr(e)))
+    def run(self):
+        self.align(self.opts.progressiveCactusDir, self.opts.cactusConfigFile)
+        self.makeHub()
+        self.getCoverage()
+        if self.getOption("Evaluation", "truth") is not None:
+            self.getPrecisionRecall()
+        if self.getOption("Evaluation", "dotplot") is not None:
+            self.makeDotplot()
+        if self.getOption("Evaluation", "coalescenceRefGenome") is not None:
+            self.getCoalescences()

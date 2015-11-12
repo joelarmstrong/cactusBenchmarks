@@ -2,6 +2,8 @@
 """
 Runs a set of benchmarks/integration tests for progressiveCactus.
 """
+from jobTree.scriptTree.target import Target
+from jobTree.scriptTree.stack import Stack
 import sys
 import os
 from bioio import system
@@ -11,6 +13,8 @@ from testSet import TestSet
 def initializeProgressiveCactus(opts):
     """Points progressiveCactus to the correct commit and compiles."""
     os.chdir(opts.progressiveCactusDir)
+    system("git clone https://github.com/glennhickey/progressiveCactus.git")
+    os.chdir("progressiveCactus")
     system("git fetch")
     system("git checkout %s" % (opts.progressiveCactusBranch))
     system("git pull")
@@ -20,9 +24,9 @@ def initializeProgressiveCactus(opts):
         system("git fetch")
         system("git checkout %s" % (opts.cactusBranch))
         os.chdir(opts.progressiveCactusDir)
-    system("make ucsc")
+    system("make")
 
-def setupTestSets(dir, outputDir, tests=None):
+def setupTestSets(opts):
     """Initializes the TestSet classes.
 
     By default, a test is created for each directory in the
@@ -31,26 +35,24 @@ def setupTestSets(dir, outputDir, tests=None):
     instead.
     """
     testPaths = None # for proper scoping
-    if tests is None:
-        testPaths = [os.path.join(dir, d) for d in os.listdir(dir)]
+    if opts.tests is None:
+        testPaths = [os.path.join(opts.testRegionsDir, d) for d in os.listdir(opts.testRegionsDir)]
         testPaths = filter(os.path.isdir, testPaths)
     else:
-        testPaths = [os.path.join(dir, d) for d in tests.split(",")]
+        testPaths = [os.path.join(opts.testRegionsDir, d) for d in opts.tests.split(",")]
         if not all([os.path.isdir(d) for d in testPaths]):
-            raise RuntimeError("Test paths not found: %s" % [not os.path.isdir(d) for d in testPaths])
+            raise RuntimeError("Test paths not found: %s" % [d for d in testPaths if not os.path.isdir(d)])
 
     tests = []
     for path in testPaths:
         test = TestSet(path, path, os.path.join(path, "config"),
-                       os.path.join(outputDir, os.path.basename(os.path.normpath(path))))
+                       os.path.join(opts.outputDir, os.path.basename(os.path.normpath(path))),
+                       opts)
         tests.append(test)
     return tests
 
 def parseArgs(args):
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument('progressiveCactusDir',
-                        help="Location of progressiveCactus",
-                        type=os.path.abspath)
     parser.add_argument('testRegionsDir',
                         help="directory containing test regions",
                         type=os.path.abspath)
@@ -66,24 +68,32 @@ def parseArgs(args):
                         default=None)
     parser.add_argument('--cactusConfigFile',
                         help="config xml to use instead of default",
-                        default=None)
+                        default=None,
+                        type=os.path.abspath)
     parser.add_argument('--outputDir',
                         help="dir to place test results in",
                         default="output",
                         type=os.path.abspath)
-    parser.add_argument('--stats',
-                        help="output stats file with jobTree stats",
-                        default=False, action="store_true")
+    Stack.addJobTreeOptions(parser)
     return parser.parse_args(args[1:])
 
 def main(args):
     opts = parseArgs(args)
+    Stack(Target.makeTargetFn(pipeline, args=[opts])).startJobTree(opts)
+
+def pipeline(target, opts):
+    tempDir = target.getGlobalTempDir()
+
+    opts.progressiveCactusDir = tempDir
 
     # setup progressiveCactus to point to the right commit, and run
     # make
     initializeProgressiveCactus(opts)
 
-    tests = setupTestSets(opts.testRegionsDir, opts.outputDir, opts.tests)
+    # FIXME this is terrible
+    opts.progressiveCactusDir = os.path.join(tempDir, "progressiveCactus")
+
+    tests = setupTestSets(opts)
 
     # ensure our output dir exists, and redirect our stderr there for
     # logging purposes.
@@ -92,7 +102,7 @@ def main(args):
     sys.stderr = open(os.path.join(opts.outputDir, "log"), 'w')
 
     for test in tests:
-        test.run(opts)
+        target.addChildTarget(test)
 
     # Put git commit in the output dir
     os.chdir(opts.progressiveCactusDir)
@@ -110,4 +120,5 @@ def main(args):
                                         opts.outputDir))
 
 if __name__ == '__main__':
+    from runBenchmarks import *
     main(sys.argv)
