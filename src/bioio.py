@@ -39,3 +39,17 @@ def nameValue(name, value, valueType=str, quotes=False):
         return "--%s '%s'" % (name, valueType(value))
     return "--%s %s" % (name, valueType(value))
 
+def popenCatch(command, stdinString=None):
+    """Runs a command and return standard out.
+    """
+    if stdinString != None:
+        process = subprocess.Popen(command, shell=True,
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=sys.stderr, bufsize=-1)
+        output, nothing = process.communicate(stdinString)
+    else:
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=sys.stderr, bufsize=-1)
+        output, nothing = process.communicate() #process.stdout.read().strip()
+    sts = process.wait()
+    if sts != 0:
+        raise RuntimeError("Command: %s with stdin string '%s' exited with non-zero status %i" % (command, stdinString, sts))
+    return output

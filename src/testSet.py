@@ -1,11 +1,13 @@
-from jobTree.scriptTree.target import Target
-import ConfigParser
-from bioio import getTempDirectory
-from bioio import system
-from bioio import nameValue
 import os
 import sys
 import re
+from jobTree.scriptTree.target import Target
+import ConfigParser
+from bioio import getTempDirectory
+from bioio import system, popenCatch
+from bioio import nameValue
+from glob import glob
+from getMisalignmentWigs import getWigsFromXML
 
 class TestSet(Target):
     """Represents a single test region.
@@ -21,6 +23,7 @@ class TestSet(Target):
         self.parseConfig(configPath)
         self.workDir = getTempDirectory()
         self.outputDir = outputDir
+        self.wigDir = getTempDirectory()
         if not os.path.exists(self.outputDir):
             os.makedirs(self.outputDir)
         self.hal = os.path.join(outputDir, "out.hal")
@@ -62,17 +65,28 @@ class TestSet(Target):
                              self.outputDir))
 
     def makeHub(self):
-        system("hal2assemblyHub.py --hub %s --longLabel %s --shortLabel %s %s --jobTree %s/jobTree %s" % (self.label, self.label, self.label, self.hal, getTempDirectory(), os.path.join(self.outputDir, "hub")))
+        """Make an assembly hub for the test set, and place it in
+        outputDir/hub."""
+        cmd = "hal2assemblyHub.py --hub %s --longLabel %s --shortLabel %s %s --jobTree %s/jobTree %s" % (self.label, self.label, self.label, self.hal, getTempDirectory(), os.path.join(self.outputDir, "hub"))
+        if self.getOption("Evaluation", "misalignmentWigTrack") is not None:
+            cmd += " --wigDirs %s --nowigLiftover" % ",".join(glob(os.path.join(self.wigDir, '*')))
+        system(cmd)
 
     def getCoverage(self):
+        """Report all-by-all coverage to outputDir/coverage."""
         system("halStats --allCoverage %s > %s" % (self.hal, os.path.join(self.outputDir, "coverage")))
 
-    def getPrecisionRecall(self):
-        """Find the precision and recall relative to the true alignment.
+    def getMafComparatorXML(self):
+        """Find the precision and recall relative to the true alignment by
+        running mafComparator.
 
         Assumes that the test set config has specified a true MAF
         containing only sequence names (not UCSC-styled "genome.chr"
         names).
+
+        Also parses the "wiggle" parts of the XML into proper .wig
+        files, if the misalignmentWigTrack option is enabled in the
+        test set's config.
         """
         truth = self.getOption('Evaluation', 'truth')
 
@@ -80,7 +94,22 @@ class TestSet(Target):
         test = os.path.join(getTempDirectory(), 'test.maf')
         system("hal2maf --onlySequenceNames --global --noAncestors %s %s" % \
                (self.hal, test))
-        system("mafComparator --maf1 %s --maf2 %s --out %s" % (truth, test, os.path.join(self.outputDir, "mafComparator.xml")))
+
+        xmlPath = os.path.join(self.outputDir, "mafComparator.xml")
+        comparatorCmd = "mafComparator --maf1 %s --maf2 %s --out %s" % (truth, test, xmlPath)
+        if self.getOption("Evaluation", "misalignmentWigTrack") is not None:
+            # Add the options to generate the requested wiggle track
+            comparatorCmd += " " + nameValue("wigglePairs", self.getOption("Evaluation", "misalignmentWigTrack"))
+            comparatorCmd += " --wiggleBinLength 1"
+        system(comparatorCmd)
+
+        if self.getOption("Evaluation", "misalignmentWigTrack") is not None:
+            # Extract the wiggle files
+            genome = getGenomeForSequence(self.hal, self.getOption("Evaluation", "misalignmentWigTrack").split(":")[0])
+            system("mkdir -p %s %s" % (os.path.join(self.wigDir, "underalignment", genome), os.path.join(self.wigDir, "overalignment", genome)))
+            underalignmentPath = os.path.join(self.wigDir, "underalignment", genome, genome + ".wig")
+            overalignmentPath = os.path.join(self.wigDir, "overalignment", genome, genome + ".wig")
+            getWigsFromXML(xmlPath, underalignmentPath, overalignmentPath)
 
     def makeDotplot(self):
         """Puts a dotplot in dotplot.pdf, given the dotplot option
@@ -112,12 +141,26 @@ class TestSet(Target):
                 os.path.join(self.outputDir, "coalescences.xml")))
 
     def run(self):
+        """Do everything that needs to be done to the test set: alignment,
+        evaluation, and visualization."""
         self.align(self.opts.progressiveCactusDir, self.opts.cactusConfigFile)
-        self.makeHub()
         self.getCoverage()
         if self.getOption("Evaluation", "truth") is not None:
-            self.getPrecisionRecall()
+            self.getMafComparatorXML()
         if self.getOption("Evaluation", "dotplot") is not None:
             self.makeDotplot()
         if self.getOption("Evaluation", "coalescenceRefGenome") is not None:
             self.getCoalescences()
+        self.makeHub()
+
+def getGenomeForSequence(halFile, sequenceName):
+    """Find the genome that has a given sequence, assuming that sequence
+    names are unique in the alignment.
+    """
+    genomes = popenCatch("halStats --genomes %s" % halFile).split()
+    sequenceToGenome = {}
+    for genome in genomes:
+        sequences = popenCatch("halStats --sequences %s %s" % (genome, halFile)).split()
+        for sequence in sequences:
+            sequenceToGenome[sequence] = genome
+    return sequenceToGenome[sequenceName]

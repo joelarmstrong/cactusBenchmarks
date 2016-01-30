@@ -10,7 +10,7 @@ def parseToWigString(comparatorWig, refChrom, binLength):
     """Parses a wiggle string from the XMLComparator format to the
     official UCSC WIG format."""
     data = "\n".join(comparatorWig.split(","))
-    header = "fixedStep chrom=%s start=0 step=%s span=%s" % (refChrom, binLength, binLength)
+    header = "fixedStep chrom=%s start=1 step=%s span=%s\n" % (refChrom, binLength, binLength)
     return header + data
 
 def getWigsFromXML(xmlPath, underalignmentWig, overalignmentWig):
