@@ -45,7 +45,8 @@ def setupTestSets(opts):
 
     tests = []
     for path in testPaths:
-        test = TestSet(path, path, os.path.join(path, "config"),
+        test = TestSet(opts.label + '_' + os.path.basename(path), path,
+                       os.path.join(path, "config"),
                        os.path.join(opts.outputDir, os.path.basename(os.path.normpath(path))),
                        opts)
         tests.append(test)
