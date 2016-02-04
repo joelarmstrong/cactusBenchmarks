@@ -96,7 +96,7 @@ class TestSet(Target):
                (self.hal, test))
 
         xmlPath = os.path.join(self.outputDir, "mafComparator.xml")
-        comparatorCmd = "mafComparator --maf1 %s --maf2 %s --out %s" % (truth, test, xmlPath)
+        comparatorCmd = "mafComparator  --samples 20000000 --maf1 %s --maf2 %s --out %s" % (truth, test, xmlPath)
         if self.getOption("Evaluation", "misalignmentWigTrack") is not None:
             # Add the options to generate the requested wiggle track
             comparatorCmd += " " + nameValue("wigglePairs", self.getOption("Evaluation", "misalignmentWigTrack"))
